@@ -9,9 +9,10 @@ Requirements:
 2, Please create and enable Event Stream on AAP at first, then can attach each rulebook activations to the Event Stream;
 
 3, Please make sure collection "community.general" installed in your project dirctory(Manual) by running:
-    # ansible-galaxy collection install community.general -p collections
-    or 
-    build a new execution environment which includes community.general
+
+        # ansible-galaxy collection install community.general -p collections
+        
+   or build a new execution environment which includes community.general
 
 4, Please install sysstat, iotop, perf on each of your managed Linux servers;
 
