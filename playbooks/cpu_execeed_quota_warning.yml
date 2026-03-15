@@ -1,0 +1,37 @@
+---
+- name: Capture High CPU Snapshot
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Record investigation timestamp
+      set_fact:
+        investigation_time: "{{ lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S\"') }}"
+
+    - name: Capture Top 10 CPU Consuming Processes
+      shell: top -b -n 2 -d 1 | awk '/top - / {count++} count==2' | head -n 17
+      register: top_output
+
+    - name: Send CPU Investigation Email
+      community.general.mail:
+        host: <YOUR E-MAIL SERVER>
+        port: <YOUR PORT>
+        username: <USERNAME>
+        password: <PASSWORD>
+        to: <RECEIPT>
+        subject: "[EDA CPU Alert] {{ alert_type | default('High CPU Usage') }} on {{ inventory_hostname }}"
+        body: |
+          EDA CPU Performance Investigation Report
+          ---------------------------------
+          Timestamp: {{ investigation_time }}
+          Target Host: {{ inventory_hostname }}
+          Alert Detail: {{ cpu_value | default('CPU Usage > 80%') }}
+
+          --- Top Output Snapshot (Real-time) ---
+          {{ top_output.stdout }}
+
+          ---------------------------------
+          Note: The above output includes Load Average and Memory stats.
+          Report generated automatically by Event-Driven Ansible.
+        secure: always
+      delegate_to: localhost

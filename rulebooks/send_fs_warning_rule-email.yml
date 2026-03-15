@@ -1,0 +1,25 @@
+- name: FS quota execeed check and warning
+  hosts: all
+  sources:
+    - name: listen for alerts
+      ansible.eda.alertmanager:
+        host: 0.0.0.0
+        port: 5000
+
+  rules:
+    - name: Disk Utilization Warning and Take Action
+      condition: >
+        event.payload.groupLabels.alertname == "Disk_used_Hight" or 
+        event.payload.status == "firing"
+      
+      throttle:
+        once_within: 10 minutes
+        group_by_attributes:
+          - event.payload.commonLabels.instance
+
+      action:
+        run_job_template:
+          name: EDA_demo_fs_exceed_quota_warning
+          organization: Demo-1
+          job_args:
+            limit: "{{ event.payload.commonLabels.instance.split(':')[0] }}"

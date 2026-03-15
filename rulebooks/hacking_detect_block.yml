@@ -1,0 +1,17 @@
+---
+- name: Listen for events on a webhook
+  hosts: all
+  sources:
+    - name: listen for alerts 
+      ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5004
+
+  rules:
+    - name: Hacking Detect
+      condition: event.payload.message == "Warning! Hacking Detected!"
+      action:
+        run_job_template:
+          name: EDA_demo_hacking_detect_block
+          organization: Demo-1
+

@@ -1,0 +1,30 @@
+---
+- name: Disk IO Performance Monitoring
+  hosts: all
+  sources:
+    - name: listen for alerts
+      ansible.eda.alertmanager:
+        host: 0.0.0.0
+        port: 5000
+
+  rules:
+    - name: Unusual Disk IO Rate Detected
+      condition: >
+        (event.payload.groupLabels.alertname == "HostUnusualDiskReadRate" or 
+         event.payload.groupLabels.alertname == "HostUnusualDiskWriteRate") and
+        event.payload.status == "firing"
+      
+      throttle:
+        once_within: 10 minutes
+        group_by_attributes:
+          - event.payload.commonLabels.instance
+
+      action:
+        run_job_template:
+          name: EDA_demo_IO_usage_warning
+          organization: Demo-1
+          job_args:
+            limit: "{{ event.payload.commonLabels.instance.split(':')[0] }}"
+            extra_vars:
+              alert_type: "{{ event.payload.groupLabels.alertname }}"
+              io_value: "{{ event.payload.alerts[0].annotations.description }}"

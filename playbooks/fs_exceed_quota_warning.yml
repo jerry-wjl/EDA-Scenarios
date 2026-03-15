@@ -1,0 +1,30 @@
+---
+- name: Run df and send disk usage email from target host
+  hosts: all  
+  gather_facts: false
+
+  tasks:
+    - name: Debug inventory_hostname
+      debug:
+        msg: "Running on host: {{ inventory_hostname }}"
+
+    - name: Run df -TH on the target host
+      shell: df -TH
+      register: df_output
+
+    - name: Send alert email with disk usage details
+      community.general.mail:
+        host: <YOUR E-MAIL SERVER>
+        port: <YOUR PORT>
+        username: <USERNAME>
+        password: <PASSWORD>
+        to: <RECEIPT>
+        subject: "[Disk Usage Warning] {{ inventory_hostname }}"
+        body: |
+          Disk usage alert from host: {{ inventory_hostname }}
+
+          {{ df_output.stdout }}
+        secure: always
+      delegate_to: localhost
+
+

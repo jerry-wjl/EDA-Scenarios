@@ -1,0 +1,16 @@
+---
+- name: Automatic Remediation of a server
+  hosts: all
+  sources:
+    - name: listen for alerts
+      ansible.eda.alertmanager:
+        host: 0.0.0.0
+        port: 5002
+  
+  rules:
+    - name: Disk Utilization Warning and Take Action
+      condition: event.alert.labels.job == "HostOutOfDiskSpace" or event.alert.status == "firing"
+      action:
+        run_workflow_template:
+          name: EDA_demo_handle_fs_warning
+          organization: Demo-1

@@ -1,0 +1,17 @@
+---
+- name: Automatic Remediation of a server
+  hosts: rhel7.9-Inventory
+  sources:
+    - name: listen for alerts
+      ansible.eda.alertmanager:
+        host: 0.0.0.0
+        port: 5001
+  
+  rules:
+    - name: CPU full on server
+      condition: event.alert.labels.job == "hostCpuUsageAlert" or event.alert.status == "firing"
+      action:
+        run_job_template:
+          name: EDA_demo_gather_perf_data
+          organization: Demo-1
+

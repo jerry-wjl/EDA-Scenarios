@@ -1,0 +1,33 @@
+---
+- name: Gather performance data for high CPU process
+  hosts: "{{ limit | default('all') }}"
+  become: yes
+  tasks:
+    - name: Ensure /TS directory exists
+      ansible.builtin.file:
+        path: /TS
+        state: directory
+        mode: '0755'
+
+    - name: Find process with highest CPU usage
+      ansible.builtin.shell: |
+        ps -eo pid,%cpu --sort=-%cpu | head -n 2 | tail -n 1 | awk '{print $1}'
+      register: top_cpu_pid
+      changed_when: false
+
+    - name: Get process name for the PID
+      ansible.builtin.shell: |
+        ps -p {{ top_cpu_pid.stdout }} -o comm=
+      register: process_name
+      changed_when: false
+
+    - name: Record perf data for the process
+      ansible.builtin.shell: |
+        perf record -p {{ top_cpu_pid.stdout }} -o /TS/perf_data_{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}.data sleep 10
+      register: perf_result
+      failed_when: perf_result.rc != 0
+
+    - name: Generate perf report
+      ansible.builtin.shell: |
+        perf report -i /TS/perf_data_{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}.data > /TS/perf_report_{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}.txt
+      when: perf_result.rc == 0

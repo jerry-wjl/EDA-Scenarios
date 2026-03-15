@@ -1,0 +1,31 @@
+---
+- name: Comprehensive Network Monitoring
+  hosts: all
+  sources:
+    - name: listen for alerts
+      ansible.eda.alertmanager:
+        host: 0.0.0.0
+        port: 5000
+
+  rules:
+    - name: Unusual Network Activity Detected
+      condition: >
+        (event.payload.groupLabels.alertname == "HostNetworkInterfaceSaturated" or
+         event.payload.groupLabels.alertname == "HostUnusualNetworkThroughputOut" or
+         event.payload.groupLabels.alertname == "HostUnusualNetworkThroughputIn") and
+        event.payload.status == "firing"
+      
+      throttle:
+        once_within: 10 minutes
+        group_by_attributes:
+          - event.payload.commonLabels.instance
+
+      action:
+        run_job_template:
+          name: EDA_demo_network_usage_warning
+          organization: Demo-1
+          job_args:
+            limit: "{{ event.payload.commonLabels.instance.split(':')[0] }}"
+            extra_vars:
+              alert_type: "{{ event.payload.groupLabels.alertname }}"
+              target_device: "{{ event.payload.alerts[0].labels.device | default('') }}"

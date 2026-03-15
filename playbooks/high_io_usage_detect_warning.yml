@@ -1,0 +1,46 @@
+---
+- name: Investigate Unusual Disk IO
+  hosts: all
+  gather_facts: false
+  become: true  
+
+  tasks:
+    - name: Record investigation timestamp
+      set_fact:
+        investigation_time: "{{ lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S\"') }}"
+
+    - name: Capture IO stats using iotop
+      shell: iotop -b -o -n 2 -d 1 | awk '/Total DISK READ/ {p=1} p' | tail -n +1
+      register: iotop_output
+
+    - name: Get iostat details (Optional but helpful)
+      shell: iostat -dx 1 2
+      register: iostat_output
+
+    - name: Send IO Investigation Email
+      community.general.mail:
+        host: <YOUR E-MAIL SERVER>
+        port: <YOUR PORT>
+        username: <USERNAME>
+        password: <PASSWORD>
+        to: <RECEIPT>
+        subject: "[EDA IO Alert] {{ alert_type | default('High IO Usage Alert') }} on {{ inventory_hostname }}"
+        body: |
+          EDA Disk IO Investigation Report
+          ---------------------------------
+          Timestamp: {{ investigation_time }}
+          Target Host: {{ inventory_hostname }}
+          Alert Name: {{ alert_type | default('!!!---High IO Usage Warning!---!!!') }}
+          Alert Detail: {{ io_value | default('No details provided') }}
+
+          --- Top IO Consuming Processes (iotop) ---
+          {{ iotop_output.stdout }}
+
+          --- Device Level Wait Stats (iostat) ---
+          {{ iostat_output.stdout }}
+
+          ---------------------------------
+          Report generated automatically by Event-Driven Ansible.
+        secure: always
+      delegate_to: localhost
+

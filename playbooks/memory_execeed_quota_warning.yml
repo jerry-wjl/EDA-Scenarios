@@ -1,0 +1,53 @@
+---
+- name: Memory and Swap Investigation for EDA
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Record investigation timestamp
+      set_fact:
+        investigation_time: "{{ lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S\"') }}"
+
+    - name: Get Top 10 Memory Consuming Processes
+      shell: ps aux --sort=-%mem | head -n 11
+      register: top_mem_output
+
+    - name: Get Top 10 Swap Consuming Processes
+      shell: |
+        for file in /proc/*/status; do
+          awk '/^Pid|Swap/ {printf $2 " " $3} END { print "" }' $file 2>/dev/null
+        done | grep "kB" | sort -k 2 -n -r | head -n 10 | while read pid size unit; do
+          cmd=$(ps -p $pid -o comm= 2>/dev/null)
+          echo "PID: $pid - Swap: $size $unit - Command: $cmd"
+        done
+      register: top_swap_output
+
+    - name: Send Investigation Report Email
+      community.general.mail:
+        host: <YOUR E-MAIL SERVER>
+        port: <YOUR PORT>
+        username: <USERNAME>
+        password: <PASSWORD>
+        to: <RECEIPT>
+        subject: "[EDA Investigation] {{ alert_type | default('Memory/Swap Alert') }} on {{ inventory_hostname }}"
+        body: |
+          EDA Automatic Investigation Report
+          ---------------------------------
+          Timestamp: {{ investigation_time }}
+          Target Host: {{ inventory_hostname }}
+          Triggered By: {{ alert_type | default('Manual/Unknown') }}
+
+          --- Top 10 Memory Consuming Processes ---
+          {{ top_mem_output.stdout }}
+
+          --- Top 10 Swap Consuming Processes ---
+          {% if top_swap_output.stdout %}
+          {{ top_swap_output.stdout }}
+          {% else %}
+          No significant swap usage found or unable to retrieve swap stats.
+          {% endif %}
+
+          ---------------------------------
+          This is an automated report sent by Event-Driven Ansible.
+        secure: always
+      delegate_to: localhost

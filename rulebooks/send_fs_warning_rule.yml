@@ -1,0 +1,25 @@
+- name: FS quota execeed check and warning
+  hosts: all
+  sources:
+    - name: listen for alerts
+      ansible.eda.alertmanager:
+        host: 0.0.0.0
+        port: 5002
+
+  rules:
+    - name: Disk Utilization Warning and Take Action
+      condition: event.alert.labels.job == "HostOutOfDiskSpace" or event.alert.status == "firing"
+      throttle:
+      once_after: 1
+        group_by_attributes:
+        - event.alert.labels.instance
+      action:
+        # debug:
+        #  msg: "{{ event.meta.hosts }}"
+        run_job_template:
+          name: EDA_demo_fs_exceed_quota_warning
+          organization: Demo-1
+          job_args:
+            limit: "{{ event.alert.labels.instance.split(':')[0] }}"
+            # limit: "{{ event.meta.hosts }}"
+
