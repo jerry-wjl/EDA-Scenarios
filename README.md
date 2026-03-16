@@ -6,3 +6,4 @@ The repository contains rulebooks and playbooks for most typical Ansible Automat
 2. High Memory Usage:
 3. High Disk IO Usage:
 4. High Network Bandwidth Usage:
+5. Filesystem Usage Exceed Quota:
