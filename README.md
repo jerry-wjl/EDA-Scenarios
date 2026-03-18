@@ -1,5 +1,6 @@
 # Introduction:
-The repository contains rulebooks and playbooks for most typical Ansible Automation Platform EDA using scenarios. 
+The repository contains rulebooks and playbooks for most typical EDA on Ansible Automation Platform(AAP) using scenarios. For thoese scenarios, we use Prometheus & Alertmanager as monitoring platform, working with AAP EDA to automatically tracking event and trigger job template for some actions, such as sending alert to admin, auto remediation., etc. In each scenarios contains a rulebook(set as "rulebook activation" on AAP) which mapping a playbook(set as "job template" on AAP).
+
 
 <br>
 
@@ -23,3 +24,7 @@ The repository contains rulebooks and playbooks for most typical Ansible Automat
 | Managed node2                                            | rhel7.9-server02.example.com           |
 
 <br>
+
+# Monitoring platform (Prometheus + Alertmanager) install and setup:
+
+
